@@ -8,6 +8,17 @@ export const productResolver = {
         include: { user: true, rents: true },
       });
     },
+    getAllproducts: async (_, __, context) => {
+      // Check if the user is authenticated
+      if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Fetch all available products
+      const allProducts = await prisma.product.findMany();
+
+      return allProducts;
+    },
   },
   Mutation: {
     createProduct: async (_, { name, categories, description, price, rentPrice, rentDuration }, context) => {
@@ -30,6 +41,7 @@ export const productResolver = {
               endTime:null,
               price: rentPrice,
               durationType: rentDuration
+
             }
           }
         },
@@ -51,19 +63,187 @@ export const productResolver = {
       return product;
     },
     editProduct: async (_, { productId, name, categories, description, price, rentPrice, rentDuration }, context) => {
-      // Implementation
+      if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Find the existing product
+      const existingProduct = await prisma.product.findUnique({
+        where: { id: parseInt(productId) },
+        include: { rents: true },
+      });
+
+      // Check if the user is the owner of the product
+      if (existingProduct.userId !== context.userId) {
+        throw new Error('Permission denied. You are not the owner of this product.');
+      }
+
+      // Update product in the database
+      const updatedProduct = await prisma.product.update({
+        where: { id: parseInt(productId) },
+        data: {
+          name: name || existingProduct.name,
+          categories: categories || existingProduct.categories,
+          description: description || existingProduct.description,
+          price: price || existingProduct.price,
+          rents: {
+            update: {
+              where: { id: existingProduct.rents[0]?.id || -1 },
+              data: {
+                price: rentPrice || existingProduct.rents[0]?.price,
+                duration: rentDuration || existingProduct.rents[0]?.duration,
+              },
+            },
+          },
+        },
+        include: {
+          user: true,
+          rents: true,
+        },
+      });
+
+      return updatedProduct;
     },
     deleteProduct: async (_, { productId }, context) => {
-      // Implementation
+       // Check if the user is authenticated
+       if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Find the existing product
+      const existingProduct = await prisma.product.findUnique({
+        where: { id: parseInt(productId) },
+        include: { rents: true },
+      });
+
+      // Check if the user is the owner of the product
+      if (existingProduct.userId !== context.userId) {
+        throw new Error('Permission denied. You are not the owner of this product.');
+      }
+      await prisma.rent.deleteMany({
+        where: { productId: parseInt(productId) },
+      });
+      await prisma.transaction.deleteMany({
+        where: { productId: parseInt(productId) },
+      });
+      // Delete product from the database
+      await prisma.product.delete({
+        where: { id: parseInt(productId) },
+      });
+
+      return `Product with ID ${productId} has been deleted by user with ID ${context.userId}`;
     },
     buyProduct: async (_, { productId }, context) => {
-      // Implementation
+      // Check if the user is authenticated
+      if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Buy product logic
+      await prisma.product.update({
+        where: { id: parseInt(productId) },
+        data: {
+          isBought: true
+        }
+      });
+
+      // Log transaction
+      await prisma.transaction.create({
+        data: {
+          type: 'BOUGHT',
+          productId: parseInt(productId),
+          userId: context.userId,
+        }
+      });
+
+      return `Product with ID ${productId} has been bought by user with ID ${context.userId}`;
     },
     rentProduct: async (_, { productId, startTime, endTime }, context) => {
-      // Implementation
+      // Check if the user is authenticated
+      if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+
+      // Find the product with associated rents
+      const product = await prisma.product.findUnique({
+        where: { id: parseInt(productId) },
+        include: { rents: true },
+      });
+      
+        const rent = product.rents[0];
+      
+      if (product.isBought) {
+        throw new Error('This product has been sold');
+      }
+      const isRented = await prisma.transaction.findFirst({
+        where: {
+          productId: parseInt(productId),
+          type: 'RENTED',
+        },
+      });
+
+      if (isRented) {
+        throw new Error('This product is already rented.');
+      }
+     
+      // Update the rent with new information
+      const updatedRent = await prisma.rent.update({
+        where: { id: rent.productId },
+        data: {
+          startTime: startTime ? new Date(startTime) : rent.startTime,
+          endTime: endTime ? new Date(endTime) : rent.endTime,
+        },
+      });
+
+      // Log transaction
+      await prisma.transaction.create({
+        data: {
+          type: 'RENTED',
+          productId: parseInt(productId),
+          userId: context.userId,
+        },
+      });
+
+      return updatedRent;
     },
     viewProduct: async (_, { productId }, context) => {
-      // Implementation
+     // Check if the user is authenticated
+     if (!context.userId) {
+      throw new Error('Authentication required');
+    }
+
+    // Find the product
+    const product = await prisma.product.findUnique({
+      where: { id: parseInt(productId) },
+    });
+
+    // Check if the user's email is already associated with the product's views
+    const userView = await prisma.productView.findFirst({
+      where: {
+        productId: parseInt(productId),
+        userEmail: context.userEmail, // Assuming userEmail is available in context
+      },
+    });
+
+    // If the user's email is not associated with the product's views, increase the view count
+    if (!userView) {
+      await prisma.productView.create({
+        data: {
+          productId: parseInt(productId),
+          userEmail: context.userEmail, // Assuming userEmail is available in context
+        },
+      });
+
+      // Increment the product's view count
+      await prisma.product.update({
+        where: { id: parseInt(productId) },
+        data: {
+          views: product.views + 1,
+        },
+      });
+    }
+
+    return product;
     },
   },
 };
