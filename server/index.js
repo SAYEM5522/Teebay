@@ -1,6 +1,5 @@
 import express from "express"
 import cors from "cors"
-import bodyParser from "body-parser"
 import { makeExecutableSchema } from "@graphql-tools/schema"
 import { ApolloServer } from "apollo-server-express"
 import { mergedTypes } from "./schema/mergeSchema.js"
@@ -9,7 +8,6 @@ import jwt from "jsonwebtoken"
 const PORT=process.env.PORT||8081
 const app=express()
 app.use(cors())
-app.use(bodyParser())
 
 const schema = makeExecutableSchema({
   typeDefs: mergedTypes,
@@ -29,12 +27,13 @@ async function startServer() {
       const token = req.headers.authorization || '';
       const decodedToken = jwt.decode(token.replace('Bearer ', ''), '123456');
       const userId = decodedToken ? decodedToken.userId : null;
-      return { userId };
+      const userEmail = decodedToken ? decodedToken.email : null;
+      return { userId,userEmail };
     },
   
   });
   await server.start();
-  server.applyMiddleware({ app, path: '/graphql' });
+  server.applyMiddleware({ app, path: '/teebay' });
 
 }
 startServer();
