@@ -29,10 +29,10 @@ CREATE TABLE "Product" (
 -- CreateTable
 CREATE TABLE "Rent" (
     "id" SERIAL NOT NULL,
-    "startTime" TIMESTAMP(3) NOT NULL,
-    "endTime" TIMESTAMP(3) NOT NULL,
+    "startTime" TIMESTAMP(3),
+    "endTime" TIMESTAMP(3),
     "price" DOUBLE PRECISION NOT NULL,
-    "duration" TEXT NOT NULL,
+    "durationType" TEXT NOT NULL,
     "productId" INTEGER NOT NULL,
 
     CONSTRAINT "Rent_pkey" PRIMARY KEY ("id")
@@ -46,6 +46,15 @@ CREATE TABLE "Transaction" (
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProductView" (
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "userEmail" TEXT NOT NULL,
+
+    CONSTRAINT "ProductView_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex

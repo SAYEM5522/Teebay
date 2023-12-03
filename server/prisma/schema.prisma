@@ -41,10 +41,10 @@ model Product {
 
 model Rent {
   id        Int      @id @default(autoincrement())
-  startTime DateTime
-  endTime   DateTime
+  startTime DateTime?
+  endTime   DateTime?
   price     Float
-  duration  String
+  durationType  String
   productId Int
   product   Product @relation(fields: [productId], references: [id])
 }
@@ -57,6 +57,14 @@ model Transaction {
   userId    Int
   user      User      @relation(fields: [userId], references: [id])
 }
+// schema.prisma
+
+model ProductView {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  userEmail String
+}
+
 
 
 
