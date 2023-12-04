@@ -15,10 +15,33 @@ export const productResolver = {
       }
 
       // Fetch all available products
-      const allProducts = await prisma.product.findMany();
+      const allProducts = await prisma.product.findMany({
+        include: {
+          rents: true, // Include rents associated with each product
+        },
+      });
 
       return allProducts;
     },
+    userProducts: async (_, __, context) => {
+      // Check if the user is authenticated
+      if (!context.userId) {
+        throw new Error('Authentication required');
+      }
+    
+      // Fetch products specific to the authenticated user
+      const userProducts = await prisma.product.findMany({
+        where: {
+          userId: context.userId,
+        },
+        include: {
+          rents: true, // Include rents associated with each product
+        },
+      });
+    
+      return userProducts;
+    },
+    
   },
   Mutation: {
     createProduct: async (_, { name, categories, description, price, rentPrice, rentDuration }, context) => {

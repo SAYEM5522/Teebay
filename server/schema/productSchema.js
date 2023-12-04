@@ -26,6 +26,7 @@ export const productSchema = gql`
   type Query {
     getProduct(id: ID!): Product,
     getAllproducts: [Product!]!
+    userProducts: [Product!]!
   }
 
   type Mutation {
