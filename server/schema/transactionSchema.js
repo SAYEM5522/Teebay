@@ -1,14 +1,16 @@
 import { gql } from "apollo-server-express";
 
  export const transactionSchema = gql`
-  type Transaction {
-    id: ID!
-    type: String!
-    product: Product
-    user: User
-  }
+ type Transaction {
+  id: ID!
+  type: String!
+  productId: ID!
+  userId: ID!
+  product:Product
+}
 
-  type Query {
-    getUserTransactions(userId: ID!): [Transaction]
-  }
+type Query {
+  mySales: [Transaction!]!
+  myPurchases: [Transaction!]!
+}
 `;

@@ -56,7 +56,7 @@ export const productResolver = {
           categories,
           description,
           price,
-          createdAt: new Date().toISOString(), // Set creation timestamp
+          createdAt: new Date(),
           userId: context.userId,
           rents: {
             create: {
@@ -162,21 +162,44 @@ export const productResolver = {
         throw new Error('Authentication required');
       }
 
+      // Get information about the product and its seller
+      const productInfo = await prisma.product.findUnique({
+        where: { id: parseInt(productId) },
+        include: { user: true }, // Assuming there is a user association
+      });
+
+      if (!productInfo) {
+        throw new Error('Product not found');
+      }
+
+      if (productInfo.isBought) {
+        throw new Error('This product has already been bought');
+      }
+
       // Buy product logic
       await prisma.product.update({
         where: { id: parseInt(productId) },
         data: {
-          isBought: true
-        }
+          isBought: true,
+        },
       });
 
-      // Log transaction
+      // Log transaction for the buyer
       await prisma.transaction.create({
         data: {
-          type: 'BOUGHT',
+          type: 'BOUGHT', // Indicate that the user has bought the product
           productId: parseInt(productId),
           userId: context.userId,
-        }
+        },
+      });
+
+      // Log transaction for the seller
+      await prisma.transaction.create({
+        data: {
+          type: 'SOLD', // Indicate that the seller has sold the product
+          productId: parseInt(productId),
+          userId: productInfo.user.id,
+        },
       });
 
       return `Product with ID ${productId} has been bought by user with ID ${context.userId}`;
@@ -192,8 +215,9 @@ export const productResolver = {
         where: { id: parseInt(productId) },
         include: { rents: true },
       });
+      console.log(product)
       
-        const rent = product.rents[0];
+    const rent = product?.rents[0];
       
       if (product.isBought) {
         throw new Error('This product has been sold');
@@ -211,7 +235,7 @@ export const productResolver = {
      
       // Update the rent with new information
       const updatedRent = await prisma.rent.update({
-        where: { id: rent.productId },
+        where: { id: rent.id },
         data: {
           startTime: startTime ? new Date(startTime) : rent.startTime,
           endTime: endTime ? new Date(endTime) : rent.endTime,
