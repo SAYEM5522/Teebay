@@ -37,10 +37,6 @@ npm install
 ```
 ### Replace your database information (username, password, and database) in the .env.example file, and then rename it to .env
 
-```bash
-npm start
-
-```
 ### Run the prisma migration 
 ```bash
 npx prisma migrate dev --name <migration_name>
