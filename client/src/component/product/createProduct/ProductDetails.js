@@ -6,8 +6,9 @@ import { useMutation } from '@apollo/client';
 import { DELETE_PRODUCT, VIEW_PRODUCT } from '../../graphql/Mutation';
 import { GET_ALL_PRODUCTS, USER_PRODUCTS } from '../../graphql/Query';
 import moment from "moment"
+import Loader from '../Loader';
 const ProductDetails = ({type,product,disable}) => {
-  const [deleteProduct] = useMutation(DELETE_PRODUCT);
+  const [deleteProduct,{loading}] = useMutation(DELETE_PRODUCT);
   const [viewProduct] = useMutation(VIEW_PRODUCT);
   const day = moment.unix(Number(product?.createdAt)/1000).utc();
   const formatted = day.format('D MMMM YYYY');
@@ -132,7 +133,15 @@ const ProductDetails = ({type,product,disable}) => {
         text={"Delete"}
         description={"Are you sure you want to delete your product."}
         >
-          <button onClick={handleDelete}  type="button" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Delete</button>
+          <button onClick={handleDelete}  type="button" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">
+          {
+                loading?(
+                  <Loader size={25}/>
+                ):(
+                  <p>Delete</p>
+                )
+              }
+          </button>
         </Model>
       }
     </div>

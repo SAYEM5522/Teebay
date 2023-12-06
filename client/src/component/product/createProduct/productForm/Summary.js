@@ -15,7 +15,7 @@ const Summary = ({ onPrev, onSubmit, productName, productDescription,productCate
       
 
 
-      <div className=' flex items-center min-w-[400px] justify-between flex-row'>
+      <div className=' flex items-center w-full justify-between flex-row'>
         <button className=' mt-5 px-3 py-2 bg-[#6558f5] text-white rounded-md' onClick={onPrev}>Back</button>
       <button className='self-end mt-5 px-3 py-2 bg-[#6558f5] text-white rounded-md' onClick={onSubmit}>
       {
